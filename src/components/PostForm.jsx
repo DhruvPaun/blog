@@ -9,8 +9,11 @@ import Button from "./Button"
 import BlogEditor from './BlogEditor'
 
 function PostForm({ post }) {
+  console.log("PostForm rendered");
   const navigate = useNavigate()
   const userData = useSelector(state => state.userData)
+  console.log("User data:", userData);
+
   const { register, handleSubmit, getValues, control, watch, setValue } = useForm({
     defaultValues: {
       title: post?.title || "",
@@ -23,23 +26,23 @@ function PostForm({ post }) {
   const upload = async (data) => {
     try {
       if (post) {
-      const file = data.image?.[0] ? await services.uploadFile(data.image[0]) : null
-      if (file) services.deleteFile(post.coverImage)
-      const dbPost = await services.updatePost(post.$id, { ...data, coverImage: file ? file.$id : undefined })
-      if (dbPost) navigate(`/post/${dbPost.slug}`)
-    } else {
-      const file = await services.uploadFile(data.image[0])
-      if (file) {
-        data.coverImage = file.$id
-        const dbPost = await services.addPost({ ...data, userId: userData.$id })
+        const file = data.image?.[0] ? await services.uploadFile(data.image[0]) : null
+        if (file) services.deleteFile(post.coverImage)
+        const dbPost = await services.updatePost(post.$id, { ...data, coverImage: file ? file.$id : undefined })
         if (dbPost) navigate(`/post/${dbPost.slug}`)
+      } else {
+        const file = await services.uploadFile(data.image[0])
+        if (file) {
+          data.coverImage = file.$id
+          const dbPost = await services.addPost({ ...data, userId: userData.$id })
+          if (dbPost) navigate(`/post/${dbPost.slug}`)
+        }
       }
-    }
     } catch (error) {
-      console.log("Erro r updating post");
-      
+      console.log("Error updating post", error);
     }
-    
+  };  // <--- FIXED HERE
+
   const slugTransform = useCallback((title) => {
     if (title && typeof title === "string") {
       return title.trim().toLowerCase().replace(/[^a-zA-Z\d\s]+/g, "-").replace(/\s/g, "-")
@@ -59,32 +62,34 @@ function PostForm({ post }) {
       onSubmit={handleSubmit(upload)} 
       className="flex flex-wrap p-6 bg-amber-50 rounded-2xl shadow-lg space-y-6 md:space-y-0"
     >
-      {/* Left Column */}
       <div className="w-full md:w-7/12 px-2 space-y-6">
         <Input 
           type="text" 
           label="Title" 
-          placeholder="Enter Title" 
-          className="bg-white border border-amber-300 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 rounded-lg"
+          placeholder="Enter Title"
+          className="bg-white border border-amber-300"
           {...register("title",{ required: true })}
         />
         <Input 
-          type="text" 
-          label="Slug" 
-          placeholder="Enter Slug" 
-          className="bg-white border border-amber-300 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 rounded-lg"
-          {...register("slug",{ required: true })} 
+          type="text"
+          label="Slug"
+          placeholder="Enter Slug"
+          className="bg-white border border-amber-300"
+          {...register("slug",{ required: true })}
           onInput={(e)=> setValue("slug", slugTransform(e.currentTarget.value), { shouldValidate:true })}
         />
-        <BlogEditor control={control} name="content" defaultValue={getValues("content")} />
+        <BlogEditor 
+          control={control} 
+          name="content" 
+          defaultValue={post ? post.content : ""} 
+        />
       </div>
 
-      {/* Right Column */}
       <div className="w-full md:w-5/12 px-2 space-y-6 pt-4 md:pt-0">
         <Input 
-          type="file" 
-          label="Cover Image" 
-          className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-amber-100 file:text-amber-700 hover:file:bg-amber-200"
+          type="file"
+          label="Cover Image"
+          className="block w-full"
           {...register("image",{ required: !post })}
         />
         {post && (
@@ -96,22 +101,16 @@ function PostForm({ post }) {
             />
           </div>
         )}
-        <Select 
-          options={["active","not-active"]} 
-          label="Status"
-          className="bg-white border border-amber-300 focus:border-amber-400 focus:ring-1 focus:ring-amber-400 rounded-lg"
-        />
+        <Select options={["active","not-active"]} label="Status" />
         <Button 
           type="submit" 
-          className={`w-full py-2 px-4 rounded-lg text-white font-semibold transition duration-200 
-                      ${post ? 'bg-green-500 hover:bg-green-600' : 'bg-amber-600 hover:bg-amber-700'}`}
+          className="w-full py-2 px-4 rounded-lg"
         >
           {post ? "Update Post" : "Add Post"}
         </Button>
       </div>
     </form>
   )
-}
 }
 
 export default PostForm

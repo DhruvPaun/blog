@@ -2,6 +2,7 @@ import React from 'react'
 import { Controller } from 'react-hook-form'
 import { Editor } from '@tinymce/tinymce-react'
 function BlogEditor({control,name,defaultValue=""}) {
+  console.log("Editor should mount");
   return (
     <Controller name={name||"content"}  control={control} render={({field:{onChange}})=>(
         <Editor apiKey='yixy5vjnr2a6vrcmpu7gq18js35iy3510on16xjy9p9x7gkb' initialValue={defaultValue} init={{
